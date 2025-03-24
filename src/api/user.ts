@@ -43,11 +43,10 @@ export function deleteUser(uid: string): Promise<any> {
 }
 
 // 获取当前登录用户的基础信息
-export function basic(data: updateVO): Promise<UserDto> {
+export function basic(): Promise<UserDto> {
     return request({
         url: '/user/basic',
-        method: 'post',
-        data
+        method: 'post'
     })
 }
 

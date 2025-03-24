@@ -10,7 +10,7 @@
             <span class="el-dropdown-link">
               <el-avatar :size="32"
                          src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-              <span class="username">{{ userStore.getUserName }}</span>
+              <span class="username">{{ adminName }}</span>
               <el-icon class="el-icon--right"><arrow-down /></el-icon>
             </span>
             <template #dropdown>
@@ -106,15 +106,25 @@ import {
   Clock,
   ArrowDown
 } from '@element-plus/icons-vue'
-import { useUserStore } from '../store/index'
+import { useAdminStore } from '../store'
 import {autoDownAndUpCast} from "../api/movie.ts";
 import { onMounted } from "vue";
+import {ElMessage} from "element-plus";
 
-const userStore = useUserStore()
+const adminStore = useAdminStore()
+
+const adminName = adminStore.getAdminName || localStorage.getItem('adminName')
 
 const handleLogout = () => {
   // 退出登录逻辑
-  console.log('退出登录')
+  // 删除当前登录用户的token
+  localStorage.removeItem('adminToken')
+  localStorage.removeItem('admin')
+  localStorage.removeItem('adminName')
+  ElMessage.success('退出登录')
+  setTimeout(function () {
+    location.assign('/')
+  }, 500)
 }
 
 // 静默执行自动更新

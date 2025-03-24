@@ -12,6 +12,9 @@ export const useUserStore = defineStore("user", {
     },
     actions: {
         setUser(user: UserDto) {
+            // 将user的名字存入本地
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("uname", user.uname);
             this.user = user;
         },
     },
@@ -28,6 +31,9 @@ export const useAdminStore = defineStore("admin", {
     },
     actions: {
         setAdmin(admin: AdminDto) {
+            // 将admin的名字存入本地
+            localStorage.setItem("admin", JSON.stringify(admin));
+            localStorage.setItem("adminName", admin.adminName);
             this.admin = admin;
         },
     },

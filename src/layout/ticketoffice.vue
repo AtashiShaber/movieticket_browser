@@ -23,7 +23,7 @@
             <el-dropdown>
               <span class="user-info">
                 <el-avatar :size="32" :src="userStore" />
-                <span class="username">{{ userStore.getUserName }}</span>
+                <span class="username">{{ uname }}</span>
                 <el-icon><arrow-down /></el-icon>
               </span>
               <template #dropdown>
@@ -57,16 +57,25 @@
 import {
   ArrowDown
 } from '@element-plus/icons-vue'
-import { useUserStore } from '../store/index'
+import { useUserStore } from '../store'
 import {autoDownAndUpCast} from "../api/movie.ts";
-import {ElMessage} from "element-plus";
 import { onMounted } from "vue";
+import {ElMessage} from "element-plus";
 
 const userStore = useUserStore()
 
+const uname = userStore.getUserName || localStorage.getItem('uname')
+
 const handleLogout = () => {
   // 退出登录逻辑
-  console.log('退出登录')
+  // 删除当前登录用户的token
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  localStorage.removeItem('uname')
+  ElMessage.success('退出登录')
+  setTimeout(function () {
+    location.assign('/')
+  }, 500)
 }
 
 // 静默执行自动更新

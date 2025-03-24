@@ -77,6 +77,8 @@ const handleLogin = () => {
     login(loginForm).then((resp) => {
       // 核心修改点：解构后端返回的AuthResponse
       const { userDto, uuid } = resp;
+      console.log(userDto)
+      console.log(uuid)
       localStorage.setItem('token', uuid);
       // 清除当前的管理员登录
       localStorage.removeItem('adminToken')

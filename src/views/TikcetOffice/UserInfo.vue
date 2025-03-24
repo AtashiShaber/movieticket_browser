@@ -1,10 +1,10 @@
 <template>
   <div class="user-center-container">
-    <!-- 头部信息卡片 -->
+    <!-- 用户信息卡片 -->
     <el-card class="user-card" :body-style="{ padding: '35px' }">
       <div class="user-header">
         <div class="avatar-section">
-          <el-avatar :size="80" :src="avatarUrl" class="user-avatar">
+          <el-avatar :size="80" class="user-avatar">
             <span class="avatar-fallback">{{ avatarFallback }}</span>
           </el-avatar>
           <div class="user-meta">
@@ -37,7 +37,7 @@
       </div>
     </el-card>
 
-    <!-- 信息管理区域 -->
+    <!-- 功能管理区域 -->
     <div class="management-section">
       <!-- 基本信息面板 -->
       <el-card class="info-panel">
@@ -73,42 +73,183 @@
         </el-descriptions>
       </el-card>
 
-      <!-- 修改密码抽屉 -->
-      <el-drawer
-          v-model="pwdDrawer.visible"
-          title="修改密码"
-          size="30%"
-          destroy-on-close
-      >
-        <PasswordForm
-            :loading="pwdDrawer.loading"
-            @submit="handlePwdSubmit"
-            @cancel="pwdDrawer.visible = false"
+      <!-- 订单查询 -->
+      <el-card class="query-panel">
+        <template #header>
+          <div class="panel-header">
+            <el-icon class="header-icon"><Tickets /></el-icon>
+            <span>我的订单</span>
+          </div>
+        </template>
+        <el-table
+            :data="orderData"
+            v-loading="orderLoading"
+            style="width: 100%"
+            stripe
+        >
+          <el-table-column prop="oid" label="订单号" width="220" />
+          <el-table-column prop="mname" label="电影名称" />
+          <el-table-column label="下单时间" width="180">
+            <template #default="{row}">
+              {{ formatDateTime(row.otime) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="金额" width="120">
+            <template #default="{row}">
+              ¥{{ row.oprice.toFixed(2) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="120">
+            <template #default="{row}">
+              <el-tag :type="getOrderStatusType(row.ostatus)">
+                {{ getOrderStatusText(row.ostatus) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-pagination
+            v-model:current-page="orderQuery.pageNum"
+            v-model:page-size="orderQuery.pageSize"
+            :total="orderTotal"
+            layout="total, prev, pager, next"
+            @current-change="loadOrders"
         />
+      </el-card>
+
+      <!-- 票务查询 -->
+      <el-card class="query-panel">
+        <template #header>
+          <div class="panel-header">
+            <el-icon class="header-icon"><Ticket /></el-icon>
+            <span>我的票务</span>
+            <div class="search-form">
+              <el-input
+                  v-model="ticketQuery.mname"
+                  placeholder="电影名称"
+                  clearable
+              />
+              <el-input
+                  v-model="ticketQuery.cname"
+                  placeholder="影院名称"
+                  clearable
+              />
+              <el-date-picker
+                  v-model="ticketQuery.sday"
+                  type="date"
+                  placeholder="放映日期"
+                  value-format="YYYY-MM-DD"
+              />
+              <el-button
+                  type="primary"
+                  @click="loadTickets"
+                  :icon="Search"
+              >查询</el-button>
+            </div>
+          </div>
+        </template>
+        <el-table
+            :data="ticketData"
+            v-loading="ticketLoading"
+            stripe
+        >
+          <el-table-column prop="tid" label="票号" width="220" />
+          <el-table-column prop="mname" label="电影名称" />
+          <el-table-column prop="cname" label="影院名称" />
+          <el-table-column prop="srname" label="放映厅" width="120" />
+          <el-table-column label="放映日期" width="120">
+            <template #default="{row}">
+              {{ formatDate(row.sday) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="tseat" label="座位" width="120" />
+          <el-table-column label="状态" width="120">
+            <template #default="{row}">
+              <el-tag :type="row.tstatus === 1 ? 'success' : 'danger'">
+                {{ row.tstatus === 1 ? '有效' : '已使用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-pagination
+            v-model:current-page="ticketQuery.pageNum"
+            v-model:page-size="ticketQuery.pageSize"
+            :total="ticketTotal"
+            layout="total, prev, pager, next"
+            @current-change="loadTickets"
+        />
+      </el-card>
+
+      <!-- 修改密码抽屉 -->
+      <el-drawer v-model="pwdDrawer.visible" title="修改密码" size="30%">
+        <div class="drawer-content">
+          <el-form
+              ref="pwdFormRef"
+              :model="pwdForm"
+              :rules="pwdRules"
+              label-width="100px"
+          >
+            <el-form-item label="原密码" prop="oldPassword">
+              <el-input
+                  v-model="pwdForm.oldPassword"
+                  type="password"
+                  show-password
+              />
+            </el-form-item>
+            <el-form-item label="新密码" prop="newPassword">
+              <el-input
+                  v-model="pwdForm.newPassword"
+                  type="password"
+                  show-password
+              />
+            </el-form-item>
+            <el-form-item label="确认密码" prop="confirmPassword">
+              <el-input
+                  v-model="pwdForm.confirmPassword"
+                  type="password"
+                  show-password
+              />
+            </el-form-item>
+            <div class="drawer-footer">
+              <el-button @click="pwdDrawer.visible = false">取消</el-button>
+              <el-button
+                  type="primary"
+                  :loading="pwdDrawer.loading"
+                  @click="handlePwdSubmit"
+              >确认修改</el-button>
+            </div>
+          </el-form>
+        </div>
       </el-drawer>
 
       <!-- 修改手机抽屉 -->
-      <el-drawer
-          v-model="phoneDrawer.visible"
-          title="修改手机号"
-          size="30%"
-          destroy-on-close
-      >
-        <PhoneForm
-            :current-phone="userInfo.uphone"
-            :loading="phoneDrawer.loading"
-            @submit="handlePhoneSubmit"
-            @cancel="phoneDrawer.visible = false"
-        />
+      <el-drawer v-model="phoneDrawer.visible" title="修改手机号" size="30%">
+        <div class="drawer-content">
+          <el-form
+              ref="phoneFormRef"
+              :model="phoneForm"
+              :rules="phoneRules"
+              label-width="100px"
+          >
+            <el-form-item label="新手机号" prop="phone">
+              <el-input v-model="phoneForm.phone" />
+            </el-form-item>
+            <el-form-item label="旧手机号" prop="oldPhone">
+              <el-input v-model="phoneForm.oldPhone" />
+            </el-form-item>
+            <div class="drawer-footer">
+              <el-button @click="phoneDrawer.visible = false">取消</el-button>
+              <el-button
+                  type="primary"
+                  :loading="phoneDrawer.loading"
+                  @click="handlePhoneSubmit"
+              >确认修改</el-button>
+            </div>
+          </el-form>
+        </div>
       </el-drawer>
 
       <!-- 充值对话框 -->
-      <el-dialog
-          v-model="rechargeDialog.visible"
-          title="账户充值"
-          width="500px"
-          :close-on-click-modal="false"
-      >
+      <el-dialog v-model="rechargeDialog.visible" title="账户充值" width="500px">
         <el-form
             ref="rechargeFormRef"
             :model="rechargeForm"
@@ -118,29 +259,25 @@
           <el-form-item label="充值金额" prop="amount">
             <el-input-number
                 v-model="rechargeForm.amount"
-                :precision="2"
-                :step="100"
                 :min="0"
                 :max="10000"
+                :precision="2"
                 controls-position="right"
-                placeholder="请输入充值金额"
-                class="full-width"
+                style="width: 100%"
             >
               <template #prefix>¥</template>
             </el-input-number>
             <div class="tip-text">支持充值范围：0.00 - 10,000.00 元</div>
           </el-form-item>
+          <template #footer>
+            <el-button @click="rechargeDialog.visible = false">取消</el-button>
+            <el-button
+                type="primary"
+                :loading="rechargeDialog.loading"
+                @click="handleRecharge"
+            >确认充值</el-button>
+          </template>
         </el-form>
-        <template #footer>
-          <el-button @click="rechargeDialog.visible = false">取消</el-button>
-          <el-button
-              type="primary"
-              :loading="rechargeDialog.loading"
-              @click="handleRecharge"
-          >
-            确认充值
-          </el-button>
-        </template>
       </el-dialog>
     </div>
   </div>
@@ -149,9 +286,18 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Money, User, Edit, Wallet } from '@element-plus/icons-vue'
-import { basic, updatePwd, updatePhone, recharge } from '../../api/user'
-import type { UserDto, updateVO } from '../../type'
+import type { FormInstance, FormRules } from 'element-plus'
+import {
+  Money, User, Edit, Wallet, Search, Tickets, Ticket
+} from '@element-plus/icons-vue'
+import {
+  basic, updatePwd, updatePhone, recharge
+} from '../../api/user'
+import { listOrder } from '../../api/order'
+import { listTicket } from '../../api/ticket'
+import type {
+  UserDto, OrderDto, TicketDto, TicketPageQueryVO
+} from '../../type'
 import Decimal from "decimal.js";
 
 // 用户数据
@@ -162,29 +308,64 @@ const userInfo = ref<UserDto>({
   uphone: ''
 })
 
-// 头像相关
-const avatarUrl = ref('')
-const avatarFallback = computed(() =>
-    userInfo.value.uname?.slice(0, 1).toUpperCase() || 'U'
-)
-
-// 格式化金额显示
-const formattedMoney = computed(() =>
-    Number(userInfo.value.umoney).toFixed(2)
-)
-
-// 密码修改抽屉状态
+// 密码修改相关
 const pwdDrawer = reactive({
   visible: false,
   loading: false
 })
+const pwdFormRef = ref<FormInstance>()
+const pwdForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const pwdRules = reactive<FormRules>({
+  oldPassword: [
+    { required: true, message: '请输入原密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度6-20位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    {
+      validator: (_rule, value, callback) => {
+        if (value !== pwdForm.newPassword) {
+          callback(new Error('两次输入密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+})
 
-// 手机修改抽屉状态
+// 手机号修改相关
 const phoneDrawer = reactive({
   visible: false,
   loading: false
 })
+const phoneFormRef = ref<FormInstance>()
+const phoneForm = reactive({
+  phone: '',
+  oldPhone: ''
+})
+const phoneRules = reactive<FormRules>({
+  phone: [
+    { required: true, message: '请输入新手机号', trigger: 'blur' },
+    {
+      pattern: /^1[3-9]\d{9}$/,
+      message: '请输入有效的手机号码',
+      trigger: 'blur'
+    }
+  ],
+  oldPhone: [
+    { required: true, message: '请输入旧手机号', trigger: 'blur' }
+  ]
+})
 
+// 充值相关
 // 充值相关状态
 const rechargeDialog = reactive({
   visible: false,
@@ -194,7 +375,6 @@ const rechargeForm = reactive({
   amount: 0
 })
 const rechargeFormRef = ref<any>(null)
-
 // 充值验证规则
 const rechargeRules = reactive({
   amount: [
@@ -214,48 +394,132 @@ const rechargeRules = reactive({
   ]
 })
 
-// 初始化获取用户数据
-onMounted(async () => {
-  try {
-    const res = await basic({} as updateVO)
-    userInfo.value = res
-  } catch (error) {
-    ElMessage.error('获取用户信息失败')
-  }
+// 订单相关
+const orderData = ref<OrderDto[]>([])
+const orderLoading = ref(false)
+const orderTotal = ref(0)
+const orderQuery = reactive({
+  pageNum: 1,
+  pageSize: 10
 })
 
+// 票务相关
+const ticketData = ref<TicketDto[]>([])
+const ticketLoading = ref(false)
+const ticketTotal = ref(0)
+const ticketQuery = reactive<TicketPageQueryVO>({
+  pageNum: 1,
+  pageSize: 10,
+  mname: '',
+  cname: '',
+  sday: '' as unknown as Date
+})
+
+// 计算属性
+const avatarFallback = computed(() =>
+    userInfo.value.uname?.slice(0, 1).toUpperCase() || 'U'
+)
+const formattedMoney = computed(() =>
+    userInfo.value.umoney.toFixed(2)
+)
+
+// 方法
+const formatDate = (dateStr: string) =>
+    new Date(dateStr).toISOString().split('T')[0]
+
+const formatDateTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+const getOrderStatusText = (status: number) =>
+    ({ 0: '待支付', 1: '已支付', 2: '已取消' }[status] || '未知状态')
+
+const getOrderStatusType = (status: number) =>
+    ({ 0: 'warning', 1: 'success', 2: 'info' }[status] || 'info')
+
+// 数据加载
+const loadUserInfo = async () => {
+  basic().then((resp) => {
+    userInfo.value = resp
+  }).catch((error) => {
+    ElMessage.error(error)
+  })
+}
+
+const loadOrders = async () => {
+  try {
+    orderLoading.value = true
+    const res = await listOrder(orderQuery)
+    orderData.value = res.list
+    orderTotal.value = res.total
+  } catch (error) {
+    ElMessage.error('订单加载失败')
+  } finally {
+    orderLoading.value = false
+  }
+}
+
+const loadTickets = async () => {
+  try {
+    ticketLoading.value = true
+    const res = await listTicket(ticketQuery)
+    ticketData.value = res.list
+    ticketTotal.value = res.total
+  } catch (error) {
+    ElMessage.error('票务加载失败')
+  } finally {
+    ticketLoading.value = false
+  }
+}
+
 // 密码修改处理
-const handlePwdSubmit = async (formData: updateVO) => {
+const handlePwdSubmit = async () => {
+  await pwdFormRef.value?.validate()
   pwdDrawer.loading = true
-  updatePwd(formData).then(() => {
+  updatePwd({
+    oldData: pwdForm.oldPassword,
+    newData: pwdForm.newPassword
+  }).then(() => {
     ElMessage.success('密码修改成功')
     pwdDrawer.visible = false
     localStorage.removeItem("token")
-    pwdDrawer.loading = false
-    setTimeout(function () {location.assign('/')}, 500)
+    setTimeout(() => {
+      location.assign('/')
+    }, 500)
   }).catch((error) => {
-    ElMessage.error(error)
+    ElMessage.error(error);
+  }).finally(() => {
+    pwdDrawer.loading = false
   })
 }
 
 // 手机号修改处理
-const handlePhoneSubmit = async (formData: updateVO) => {
+const handlePhoneSubmit = async () => {
+  await phoneFormRef.value?.validate()
   phoneDrawer.loading = true
-  updatePhone(formData).then(() => {
+  updatePhone({
+    newData: phoneForm.phone,
+    oldData: phoneForm.oldPhone
+  }).then(() => {
     ElMessage.success('手机号修改成功')
     phoneDrawer.visible = false
-    phoneDrawer.loading = false
-    setTimeout(function () {location.assign('/')}, 500)
+    localStorage.removeItem("token")
+    setTimeout(() => {
+      location.assign('/')
+    }, 500)
   }).catch((error) => {
     ElMessage.error(error)
+  }).finally(() => {
+    phoneDrawer.loading = false
   })
 }
 
 // 充值处理
-const showRechargeDialog = () => {
-  rechargeDialog.visible = true
-}
-
 const handleRecharge = async () => {
   try {
     await rechargeFormRef.value.validate()
@@ -265,7 +529,7 @@ const handleRecharge = async () => {
     await recharge(rechargeForm.amount as unknown as Decimal)
 
     // 刷新用户信息
-    const res = await basic({} as updateVO)
+    const res = await basic()
     userInfo.value = res
 
     ElMessage.success(`成功充值 ¥${rechargeForm.amount.toFixed(2)}`)
@@ -277,9 +541,33 @@ const handleRecharge = async () => {
   }
 }
 
-// 显示抽屉
-const showPwdDialog = () => pwdDrawer.visible = true
-const showPhoneDialog = () => phoneDrawer.visible = true
+// 初始化
+onMounted(async () => {
+  // 加载用户基本信息
+  loadUserInfo().then(() => {
+    // 加载订单和票务数据
+    loadOrders()
+    loadTickets()
+  }).catch((error) => {
+    ElMessage.error(error)
+  })
+})
+
+// 显示对话框
+const showPwdDialog = () => {
+  pwdFormRef.value?.resetFields()
+  pwdDrawer.visible = true
+}
+
+const showPhoneDialog = () => {
+  phoneFormRef.value?.resetFields()
+  phoneDrawer.visible = true
+}
+
+const showRechargeDialog = () => {
+  rechargeFormRef.value?.resetFields()
+  rechargeDialog.visible = true
+}
 </script>
 
 <style scoped lang="scss">
@@ -289,9 +577,9 @@ const showPhoneDialog = () => phoneDrawer.visible = true
   padding: 20px;
 
   .user-card {
+    margin-bottom: 24px;
     border-radius: 12px;
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    margin-bottom: 24px;
 
     .user-header {
       display: flex;
@@ -309,6 +597,7 @@ const showPhoneDialog = () => phoneDrawer.visible = true
           .avatar-fallback {
             font-size: 32px;
             font-weight: 500;
+            color: white;
           }
         }
 
@@ -331,27 +620,22 @@ const showPhoneDialog = () => phoneDrawer.visible = true
         .balance-card {
           display: flex;
           align-items: center;
-          justify-content: space-between;
           padding: 16px 24px;
           background: white;
           border-radius: 8px;
           box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-          width: 450px;
 
           .balance-content {
             display: flex;
             align-items: center;
-            flex-grow: 1;
+            margin-right: 30px;
 
             .balance-icon {
-              margin-right: 16px;
               color: #67c23a;
+              margin-right: 16px;
             }
 
             .balance-info {
-              display: flex;
-              flex-direction: column;
-
               .balance-label {
                 font-size: 14px;
                 color: #909399;
@@ -367,13 +651,6 @@ const showPhoneDialog = () => phoneDrawer.visible = true
 
           .recharge-btn {
             padding: 10px 20px;
-            margin-left: 30px;
-            white-space: nowrap;
-            height: 100%;
-
-            .el-icon {
-              margin-right: 6px;
-            }
           }
         }
       }
@@ -381,72 +658,100 @@ const showPhoneDialog = () => phoneDrawer.visible = true
   }
 
   .management-section {
-    .info-panel {
+    .info-panel, .query-panel {
+      margin-bottom: 24px;
       border-radius: 12px;
 
       :deep(.el-card__header) {
         background-color: #f8f9fa;
+        padding: 18px 24px;
       }
 
       .panel-header {
         display: flex;
         align-items: center;
-        font-size: 16px;
-        font-weight: 500;
+        justify-content: space-between;
 
         .header-icon {
-          margin-right: 8px;
           color: #409eff;
+          margin-right: 8px;
+        }
+
+        .search-form {
+          display: flex;
+          gap: 10px;
+
+          .el-input, .el-date-editor {
+            width: 180px;
+          }
         }
       }
 
-      .info-list {
-        :deep(.el-descriptions__label) {
-          width: 100px;
-          color: #606266;
+      .el-pagination {
+        margin-top: 20px;
+        justify-content: flex-end;
+      }
+
+      .drawer-content {
+        padding: 20px;
+
+        .code-input {
+          display: flex;
+          gap: 10px;
+
+          .el-button {
+            width: 120px;
+          }
         }
 
-        .info-value {
-          margin-right: 12px;
-        }
-
-        .edit-btn {
-          padding: 0;
-          margin-left: 8px;
-        }
-
-        .security-status {
-          color: #67c23a;
+        .drawer-footer {
+          margin-top: 30px;
+          text-align: right;
         }
       }
     }
   }
 
-  .full-width {
-    width: 100%;
+  @media (max-width: 768px) {
+    padding: 0 12px;
+
+    .user-header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .balance-section {
+        width: 100%;
+        margin-top: 20px;
+
+        .balance-card {
+          flex-direction: column;
+          align-items: stretch;
+
+          .recharge-btn {
+            margin-top: 16px;
+            width: 100%;
+          }
+        }
+      }
+    }
+
+    .search-form {
+      flex-direction: column;
+
+      .el-input, .el-date-editor, button {
+        width: 100% !important;
+      }
+    }
+
+    :deep(.el-drawer) {
+      width: 90% !important;
+    }
   }
 
   .tip-text {
     font-size: 12px;
     color: #909399;
     margin-top: 8px;
-  }
-}
-
-@media (max-width: 768px) {
-  .user-center-container {
-    padding: 0 12px;
-
-    .balance-card {
-      flex-direction: column;
-      width: auto !important;
-
-      .recharge-btn {
-        margin-left: 0 !important;
-        margin-top: 16px;
-        width: 100%;
-      }
-    }
   }
 }
 </style>

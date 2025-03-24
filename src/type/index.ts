@@ -210,3 +210,66 @@ export interface ScreenroomPageQueryVO extends PageQuery {
     cname?: string,
     srname?: string
 }
+
+// 票务信息相关
+// 票的基础信息
+export interface Ticket {
+    tid: string,
+    sid: string,
+    tseat: string,
+    tstatus: number
+}
+
+// 票的模糊查询
+export interface TicketPageQueryVO extends PageQuery {
+    mname?: string,
+    cname?: string,
+    srname?: string,
+    sday?: Date
+}
+
+// 票的返回值信息
+export interface TicketDto {
+    tid: string,
+    mname: string,
+    cname: string,
+    srname: string,
+    sday: Date,
+    tseat: string,
+    tstatus: number
+}
+
+// 添加票的信息
+export interface TicketAddVO {
+    sid: string,
+    tseat: string,
+    tstatus: number
+}
+
+// 订单相关信息
+// 订单基础类
+export interface Order {
+    oid: string,
+    uid: string,
+    tid: string,
+    otime: Date,
+    oprice: Decimal,
+    ostatus: number
+}
+
+// 添加订单
+export interface OrderAddVO {
+    tid: string,
+    oprice: Decimal,
+    ostatus: number
+}
+
+// 订单返回信息
+export interface OrderDto {
+    oid: string,
+    tid: string,
+    mname: string,
+    otime: Date,
+    oprice: Decimal,
+    ostatus: number
+}
