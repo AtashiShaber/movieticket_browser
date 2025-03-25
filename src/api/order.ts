@@ -1,5 +1,5 @@
 import request from "../utils/request.ts";
-import type {OrderAddVO, OrderDto, PageQuery} from "../type";
+import type {OrderAddVO, OrderDto, OrderPayVO, PageQuery} from "../type";
 
 // 统计今日售票数
 export function countToday() : Promise<number> {
@@ -44,7 +44,7 @@ export function buildOrder(data: OrderAddVO) {
 }
 
 // 支付
-export function payOrder(data: OrderAddVO) {
+export function payOrder(data: OrderPayVO) {
     return request({
         url: '/order/pay',
         method: 'post',

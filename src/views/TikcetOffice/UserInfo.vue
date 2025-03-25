@@ -106,6 +106,19 @@
               </el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="操作" width="120">
+            <template #default="{row}">
+              <el-button
+                  type="primary"
+                  size="small"
+                  :disabled="row.ostatus !== 0"
+                  @click="handlePay(row)"
+                  :loading="payLoading[row.oid]"
+              >
+                {{ row.ostatus === 0 ? '立即支付' : '已支付' }}
+              </el-button>
+            </template>
+          </el-table-column>
         </el-table>
         <el-pagination
             v-model:current-page="orderQuery.pageNum"
@@ -115,7 +128,6 @@
             @current-change="loadOrders"
         />
       </el-card>
-
       <!-- 票务查询 -->
       <el-card class="query-panel">
         <template #header>
@@ -164,8 +176,8 @@
           <el-table-column prop="tseat" label="座位" width="120" />
           <el-table-column label="状态" width="120">
             <template #default="{row}">
-              <el-tag :type="row.tstatus === 1 ? 'success' : 'danger'">
-                {{ row.tstatus === 1 ? '有效' : '已使用' }}
+              <el-tag :type="row.tstatus === 0 ? 'success' : row.tstatus === 1 ? 'info' : 'danger'">
+                {{ row.tstatus === 0 ? '有效' : row.tstatus === 1 ? '已使用' : '已退款'}}
               </el-tag>
             </template>
           </el-table-column>
@@ -249,7 +261,11 @@
       </el-drawer>
 
       <!-- 充值对话框 -->
-      <el-dialog v-model="rechargeDialog.visible" title="账户充值" width="500px">
+      <el-dialog
+          v-model="rechargeDialog.visible"
+          title="账户充值"
+          width="500px"
+      >
         <el-form
             ref="rechargeFormRef"
             :model="rechargeForm"
@@ -257,27 +273,29 @@
             label-width="100px"
         >
           <el-form-item label="充值金额" prop="amount">
-            <el-input-number
+            <el-input
                 v-model="rechargeForm.amount"
-                :min="0"
-                :max="10000"
-                :precision="2"
-                controls-position="right"
-                style="width: 100%"
+                placeholder="请输入充值金额"
+                clearable
             >
               <template #prefix>¥</template>
-            </el-input-number>
-            <div class="tip-text">支持充值范围：0.00 - 10,000.00 元</div>
+            </el-input>
+            <div class="tip-text">支持充值范围：0.01 - 10,000.00 元</div>
           </el-form-item>
-          <template #footer>
-            <el-button @click="rechargeDialog.visible = false">取消</el-button>
-            <el-button
-                type="primary"
-                :loading="rechargeDialog.loading"
-                @click="handleRecharge"
-            >确认充值</el-button>
-          </template>
         </el-form>
+
+        <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="rechargeDialog.visible = false">取消</el-button>
+        <el-button
+            type="primary"
+            :loading="rechargeDialog.loading"
+            @click="handleRecharge"
+        >
+          确认充值
+        </el-button>
+      </span>
+        </template>
       </el-dialog>
     </div>
   </div>
@@ -296,9 +314,39 @@ import {
 import { listOrder } from '../../api/order'
 import { listTicket } from '../../api/ticket'
 import type {
-  UserDto, OrderDto, TicketDto, TicketPageQueryVO
+  UserDto, OrderDto, TicketDto, TicketPageQueryVO, OrderPayVO
 } from '../../type'
 import Decimal from "decimal.js";
+// 新增引入
+import { payOrder } from '../../api/order'
+
+// 在原有代码基础上新增支付相关状态
+const payLoading = ref<Record<string, boolean>>({})
+
+// 支付处理方法
+const handlePay = async (order: OrderDto) => {
+  try {
+    payLoading.value[order.oid] = true
+
+    const payData: OrderPayVO = {
+      oid: order.oid,
+      oprice: order.oprice
+    }
+
+    await payOrder(payData)
+    ElMessage.success('支付成功')
+
+    location.reload()
+  } catch (error) {
+    ElMessage.error(error || '支付失败')
+  } finally {
+    payLoading.value[order.oid] = false
+  }
+}
+
+// 修改订单状态显示方法
+const getOrderStatusType = (status: number) =>
+    ({ 0: 'warning', 1: 'success', 2: 'info' }[status] || 'info')
 
 // 用户数据
 const userInfo = ref<UserDto>({
@@ -372,21 +420,34 @@ const rechargeDialog = reactive({
   loading: false
 })
 const rechargeForm = reactive({
-  amount: 0
+  amount: ''
 })
 const rechargeFormRef = ref<any>(null)
 // 充值验证规则
-const rechargeRules = reactive({
+const rechargeRules = reactive<FormRules>({
   amount: [
-    { required: true, message: '请输入充值金额', trigger: 'blur' },
     {
-      validator: (_rule: any, value: number, callback: any) => {
-        if (value < 0) {
-          callback(new Error('充值金额不能为负数'))
-        } else if (value > 10000) {
-          callback(new Error('单笔充值金额不能超过10000元'))
-        } else {
-          callback()
+      required: true,
+      message: '请输入充值金额',
+      trigger: 'blur'
+    },
+    {
+      validator: (_, value, callback) => {
+        try {
+          const amount = new Decimal(value || 0)
+          if (amount.isNaN()) {
+            callback(new Error('请输入有效数字'))
+          } else if (amount.lessThan(0.01)) {
+            callback(new Error('金额不能小于0.01元'))
+          } else if (amount.greaterThan(10000)) {
+            callback(new Error('单次充值不能超过10000元'))
+          } else if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+            callback(new Error('金额格式不正确'))
+          } else {
+            callback()
+          }
+        } catch (e) {
+          callback(new Error('无效的金额格式'))
         }
       },
       trigger: 'blur'
@@ -412,7 +473,7 @@ const ticketQuery = reactive<TicketPageQueryVO>({
   pageSize: 10,
   mname: '',
   cname: '',
-  sday: '' as unknown as Date
+  sday: undefined
 })
 
 // 计算属性
@@ -420,7 +481,7 @@ const avatarFallback = computed(() =>
     userInfo.value.uname?.slice(0, 1).toUpperCase() || 'U'
 )
 const formattedMoney = computed(() =>
-    userInfo.value.umoney.toFixed(2)
+    userInfo.value.umoney
 )
 
 // 方法
@@ -438,9 +499,6 @@ const formatDateTime = (dateStr: string) =>
 
 const getOrderStatusText = (status: number) =>
     ({ 0: '待支付', 1: '已支付', 2: '已取消' }[status] || '未知状态')
-
-const getOrderStatusType = (status: number) =>
-    ({ 0: 'warning', 1: 'success', 2: 'info' }[status] || 'info')
 
 // 数据加载
 const loadUserInfo = async () => {
@@ -522,20 +580,27 @@ const handlePhoneSubmit = async () => {
 // 充值处理
 const handleRecharge = async () => {
   try {
-    await rechargeFormRef.value.validate()
+    // 执行表单验证
+    await rechargeFormRef.value?.validate()
+
+    // 转换为Decimal
+    const amount = new Decimal(rechargeForm.amount)
+
+    // 显示加载状态
     rechargeDialog.loading = true
 
-    // 调用充值接口
-    await recharge(rechargeForm.amount as unknown as Decimal)
+    // 调用接口（传递字符串）
+    await recharge(amount)
 
     // 刷新用户信息
     const res = await basic()
     userInfo.value = res
 
-    ElMessage.success(`成功充值 ¥${rechargeForm.amount.toFixed(2)}`)
+    ElMessage.success(`成功充值 ¥${amount.toFixed(2)}`)
     rechargeDialog.visible = false
   } catch (error) {
-    ElMessage.error('充值失败，请稍后重试')
+    const msg = error instanceof Error ? error.message : '充值失败'
+    ElMessage.error(msg)
   } finally {
     rechargeDialog.loading = false
   }

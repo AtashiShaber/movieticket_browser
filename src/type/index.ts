@@ -175,11 +175,17 @@ export interface ScreeningDto extends Screening{
 }
 
 export interface ScreeningVO {
+    mid?: string,
+    srid?: string,
+    sday?: Date,
+    stime?: string,
+    sprice?: Decimal
+}
+
+export interface ScreeningMovieVO {
     mid: string,
-    srid: string,
-    sday: Date,
-    stime: string,
-    sprice: Decimal
+    cid: string,
+    sday: Date
 }
 
 export interface ScreeningPageQueryVO extends PageQuery {
@@ -243,7 +249,8 @@ export interface TicketDto {
 export interface TicketAddVO {
     sid: string,
     tseat: string,
-    tstatus: number
+    tstatus: number,
+    oprice: Decimal
 }
 
 // 订单相关信息
@@ -259,7 +266,6 @@ export interface Order {
 
 // 添加订单
 export interface OrderAddVO {
-    tid: string,
     oprice: Decimal,
     ostatus: number
 }
@@ -272,4 +278,10 @@ export interface OrderDto {
     otime: Date,
     oprice: Decimal,
     ostatus: number
+}
+
+// 支付信息
+export interface OrderPayVO {
+    oid: string,
+    oprice: Decimal
 }

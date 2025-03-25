@@ -275,7 +275,7 @@ const submitForm = async () => {
   try {
     await addScreening(formData)
     ElMessage.success('场次添加成功')
-    router.push('/index/screening/list')
+    router.push('/admin/screening/list')
   } catch (error) {
     ElMessage.error('添加失败: ' + (error as Error).message)
   } finally {

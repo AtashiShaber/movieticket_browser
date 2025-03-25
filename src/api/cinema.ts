@@ -18,7 +18,7 @@ export function listCinema(data: CinemaPageQueryVO): Promise<CinemaDto> {
     })
 }
 
-export function listAllCinema(): Promise<Cinema> {
+export function listAllCinema(): Promise<{ list: Cinema[] }> {
     return request({
         url: '/cinema/listAll',
         method: 'post'

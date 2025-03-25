@@ -1,4 +1,4 @@
-import type {Screening, ScreeningDto, ScreeningPageQueryVO, ScreeningVO} from "../type";
+import type {Screening, ScreeningDto, ScreeningMovieVO, ScreeningPageQueryVO, ScreeningVO} from "../type";
 import request from "../utils/request.ts";
 
 
@@ -10,9 +10,19 @@ export function listScreening(data: ScreeningPageQueryVO): Promise<ScreeningDto>
     })
 }
 
+// 传入ScreeningVO（实际只需要srid（放映厅id）与sday（放映日期YYYY-MM-DD）的信息即可）获取该天的放映信息
 export function listScreeningByCid(data: ScreeningVO): Promise<Screening> {
     return request({
         url: '/screening/listByCid',
+        method: 'post',
+        data
+    })
+}
+
+// 获取当前电影的当前日期的放映信息
+export function listScreeningByMid(data: ScreeningMovieVO): Promise<ScreeningDto> {
+    return request({
+        url: '/screening/listByMid',
         method: 'post',
         data
     })

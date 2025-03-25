@@ -110,6 +110,7 @@ import { useAdminStore } from '../store'
 import {autoDownAndUpCast} from "../api/movie.ts";
 import { onMounted } from "vue";
 import {ElMessage} from "element-plus";
+import {autoUseTicket} from "../api/ticket.ts";
 
 const adminStore = useAdminStore()
 
@@ -130,6 +131,9 @@ const handleLogout = () => {
 // 静默执行自动更新
 onMounted(async () => {
   autoDownAndUpCast().then().catch((error) => {
+    console.log(error)
+  })
+  autoUseTicket().then().catch((error) => {
     console.log(error)
   })
 })
