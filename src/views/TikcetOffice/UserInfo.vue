@@ -312,7 +312,7 @@ import {
   basic, updatePwd, updatePhone, recharge
 } from '../../api/user'
 import { listOrder } from '../../api/order'
-import { listTicket } from '../../api/ticket'
+import {autoUseTicket, listTicket} from '../../api/ticket'
 import type {
   UserDto, OrderDto, TicketDto, TicketPageQueryVO, OrderPayVO
 } from '../../type'
@@ -610,6 +610,8 @@ const handleRecharge = async () => {
 onMounted(async () => {
   // 加载用户基本信息
   loadUserInfo().then(() => {
+    // 自动使用过期的票
+    autoUseTicket()
     // 加载订单和票务数据
     loadOrders()
     loadTickets()

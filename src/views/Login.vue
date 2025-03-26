@@ -23,6 +23,9 @@
           <el-button type="primary" @click="handleLogin">登录</el-button>
           <el-button type="info" @click="handleReset">重置</el-button>
         </el-form-item>
+        <el-form-item>
+          <el-link href="/register">没有账号？立即注册（普通用户）</el-link>
+        </el-form-item>
       </el-form>
     </el-card>
   </div>

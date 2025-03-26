@@ -13,6 +13,10 @@ const router = createRouter({
             component: () => import('../views/Login.vue')
         },
         {
+            path: '/register',
+            component: () => import('../views/Register.vue')
+        },
+        {
             path: '/admin',
             component: () => import('../layout/verticalTools.vue'),
             redirect: '/admin/dashboard',

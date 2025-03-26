@@ -82,7 +82,6 @@ const handleLogout = () => {
 // 静默执行自动更新
 onMounted(async () => {
   await autoDownAndUpCast()
-  await autoUseTicket()
 })
 </script>
 
