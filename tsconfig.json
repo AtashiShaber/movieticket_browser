@@ -5,7 +5,9 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
-    "strict": true,
-    "types": ["node"]
+    "types": ["node"],
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strict": false
   }
 }

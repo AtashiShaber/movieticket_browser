@@ -61,7 +61,6 @@ import { useUserStore } from '../store'
 import {autoDownAndUpCast} from "../api/movie.ts";
 import { onMounted } from "vue";
 import {ElMessage} from "element-plus";
-import {autoUseTicket} from "../api/ticket.ts";
 
 const userStore = useUserStore()
 
