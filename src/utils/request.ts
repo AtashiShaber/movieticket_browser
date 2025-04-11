@@ -8,6 +8,7 @@ import router from "../router";
 
 const request = axios.create({
     baseURL: 'http://localhost:8090',
+    // baseURL: 'http://49.235.28.76:8090',
     timeout: 3000,
     method: 'post',
     withCredentials: true

@@ -122,7 +122,7 @@ import { ref, onMounted, computed } from 'vue'
 import { Wallet, Document, User, Refresh } from '@element-plus/icons-vue'
 import { getCast, getUpComing } from '../api/movie'
 import { countTodayScreening } from '../api/screening'
-import { countTodaySales, refundRate } from '../api/order'
+import {countToday, countTodaySales, refundRate} from '../api/order'
 import type { ScreeningDto, Movie } from '../type'
 
 // 分页参数
@@ -206,7 +206,7 @@ const fetchStatistics = async () => {
       refundRate()
     ])
     sales.value = salesData
-    orderCount.value = 0 // 需要实现订单数接口
+    orderCount.value = countToday() // 需要实现订单数接口
     screeningCount.value = screeningData
     if (isNaN(rateData)) {
       refundRateValue.value = 0
