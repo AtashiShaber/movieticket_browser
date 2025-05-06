@@ -277,7 +277,8 @@ export interface OrderDto {
     mname: string,
     otime: Date,
     oprice: Decimal,
-    ostatus: number
+    ostatus: number,
+    tstatus: number
 }
 
 // 支付信息

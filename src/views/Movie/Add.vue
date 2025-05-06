@@ -7,7 +7,7 @@
           <el-button
               type="primary"
               plain
-              @click="$router.push('/index/movie/list')"
+              @click="router.push('/index/movie/list')"
           >
             返回列表
           </el-button>
@@ -78,6 +78,36 @@
           </el-col>
         </el-row>
 
+        <el-form-item label="横版封面" required>
+          <input
+            type="file"
+            accept="image/jpeg"
+            name="imgFile"
+            @change="e => {
+              const target = e.target as HTMLInputElement;
+              if (target && target.files && target.files[0]) {
+                horizontalCover = target.files[0];
+              } else {
+                horizontalCover = null;
+              }
+            }"
+          />
+        </el-form-item>
+        <el-form-item label="竖版封面" required>
+          <input
+            type="file"
+            accept="image/jpeg"
+            @change="e => {
+              const target = e.target as HTMLInputElement;
+              if (target && target.files && target.files[0]) {
+                verticalCover = target.files[0];
+              } else {
+                verticalCover = null;
+              }
+            }"
+          />
+        </el-form-item>
+
         <el-form-item>
           <el-button
               type="primary"
@@ -105,6 +135,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
 import type { MovieDto } from '../../type'
 import { addMovie } from '../../api/movie'
+import {uploading} from "../../api/upload.ts";
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -118,6 +149,9 @@ const formData = reactive<MovieDto>({
   mendtime: null,
   mstatus: 0 // 默认状态
 })
+
+const horizontalCover = ref<File | null>(null)
+const verticalCover = ref<File | null>(null)
 
 // 表单验证规则
 const formRules = reactive<FormRules<MovieDto>>({
@@ -165,21 +199,51 @@ const disabledEndDate = (time: Date) => {
 
 // 提交表单
 const submitForm = async () => {
-  await formRef.value?.validate()
-  submitting.value = true
-  addMovie(formData).then(() => {
-    ElMessage.success('电影新增成功')
-    router.push('/index/movie/list')
-  }).catch((error) => {
-    ElMessage.error(error)
-  }).finally(() => {
-    submitting.value = false
-  })
+  await formRef.value?.validate();
+  if (!horizontalCover.value || !verticalCover.value) {
+    ElMessage.error('请上传横版和竖版封面图片');
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    const mid = await addMovie(formData); // 获取返回的mid
+    await uploadCover(mid, horizontalCover.value, 'horizon');
+    await uploadCover(mid, verticalCover.value, 'vertical');
+    ElMessage.success('电影新增成功');
+    await router.push('/index/movie/list');
+  } catch (error) {
+    ElMessage.error('添加异常！请稍后再试');
+  } finally {
+    submitting.value = false;
+  }
+};
+
+// 上传封面图片
+const uploadCover = async (mid: string, file: File, type: 'horizon' | 'vertical') => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('filename', `${mid}.jpg`)
+
+  // 修改为正确的API路径
+  // const response = await fetch(`http://49.235.28.76:8090/uploading/${type}`, {
+  // const response = await fetch(`http://localhost:8090/uploading/${type}`, {
+  //   method: 'POST',
+  //   body: formData
+  // })
+
+  uploading(formData, type).then().catch(
+      (error) => {
+        ElMessage.error('上传失败，请稍后再试:', error);
+      }
+  )
 }
 
 // 重置表单
 const resetForm = () => {
   formRef.value?.resetFields()
+  horizontalCover.value = null
+  verticalCover.value = null
 }
 </script>
 

@@ -51,3 +51,12 @@ export function payOrder(data: OrderPayVO) {
         data: data
     })
 }
+
+// 退票
+export function refundOrder(data: string) {
+    return request({
+        url: '/order/refund',
+        method: 'post',
+        data: { oid: data }
+    })
+}

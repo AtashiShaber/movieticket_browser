@@ -200,18 +200,19 @@ const handlePageUpcomingChange = (val: number) => {
 // 获取统计数据
 const fetchStatistics = async () => {
   try {
-    const [salesData, screeningData, rateData] = await Promise.all([
+    const [salesData, screeningData, rateData, orderCountData] = await Promise.all([
       countTodaySales(),
       countTodayScreening(),
-      refundRate()
+      refundRate(),
+      countToday()
     ])
     sales.value = salesData
-    orderCount.value = countToday() // 需要实现订单数接口
+    orderCount.value = orderCountData
     screeningCount.value = screeningData
-    if (isNaN(rateData)) {
+    if (isNaN(rateData.data)) {
       refundRateValue.value = 0
     } else  {
-      refundRateValue.value = rateData
+      refundRateValue.value = rateData.data
     }
   } catch (error) {
     console.error('获取统计信息失败:', error)
@@ -253,7 +254,7 @@ const fetchUpcomingMovies = async () => {
     })
     upcomingMovies.value = res.list || []
     upcomingTotal.value = res.total || 0
-    if (upcomingTotal === 0){
+    if (upcomingTotal.value === 0){
       upcomingEmpty.value = true
     }
   } catch (error) {
@@ -279,10 +280,9 @@ const formatFullTime = (timeStr: string) => {
 }
 
 // 日期格式化
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: Date) => {
   try {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('zh-CN', {
+    return dateStr.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'

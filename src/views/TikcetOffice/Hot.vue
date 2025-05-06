@@ -197,7 +197,6 @@ import type {
 } from '../../type'
 import { listScreeningByMid } from "../../api/screening.ts"
 import { buildTicket, listTicketBySid } from "../../api/ticket.ts"
-import {  payOrder } from "../../api/order.ts"
 import { listMovieUpCast } from "../../api/movie.ts"
 import { listAllCinema } from "../../api/cinema.ts"
 
@@ -230,12 +229,17 @@ const dateOptions = computed(() => {
 })
 
 const filteredScreenings = computed(() => {
-  return screenings.value.filter(s =>
-      dayjs(s.sday).isAfter(dayjs().subtract(1, 'day')) &&
+  return screenings.value.filter(s => {
+    const [startTime] = s.stime.split('-'); // 提取开始时间
+    const screeningDateTime = dayjs(`${s.sday} ${startTime}`, 'YYYY-MM-DD HH:mm');
+    return (
+      screeningDateTime.isValid() && // 确保日期时间有效
+      screeningDateTime.isAfter(dayjs()) && // 过滤当前时间之前的场次
       s.cid === selectedCinema.value &&
       s.mid === selectedMovie.value
-  )
-})
+    );
+  });
+});
 
 const totalPrice = computed(() => {
   return selectedScreening.value?.sprice?.toFixed(2) || '0.00'
@@ -246,11 +250,7 @@ const getMovieImage = (mid: string) => {
   return new URL(`../../assets/Movies/vertical/${mid}.jpg`, import.meta.url).href
 }
 
-const formatTime = (time: string) => {
-  return dayjs(time).format('HH:mm')
-}
-
-const formatDate = (dateStr?: string) => {
+const formatDate = (dateStr?: Date) => {
   return dayjs(dateStr).format('YYYY-MM-DD')
 }
 
@@ -374,17 +374,23 @@ onMounted(async () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .movie-scroll-wrapper {
   overflow-x: auto;
   padding-bottom: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .movie-list {
   display: flex;
   gap: 20px;
-  padding: 10px 0;
+  padding: 10px 20px;
 }
 
 .movie-item {
@@ -392,12 +398,13 @@ onMounted(async () => {
   cursor: pointer;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: transform 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .movie-item:hover {
   transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .active-movie {
@@ -424,9 +431,12 @@ onMounted(async () => {
 .filter-section {
   display: flex;
   gap: 20px;
-  margin: 20px 0;
   align-items: center;
   flex-wrap: wrap;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .date-selector {
@@ -439,6 +449,10 @@ onMounted(async () => {
 
 .screening-section {
   min-height: 400px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .screening-grid {
@@ -452,7 +466,7 @@ onMounted(async () => {
 }
 
 .screening-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .screening-header {

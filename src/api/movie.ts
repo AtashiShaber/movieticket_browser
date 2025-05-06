@@ -46,7 +46,7 @@ export function deleteMovie(mid: string) {
 }
 
 // 增加电影
-export function addMovie(data: MovieDto) {
+export function addMovie(data: MovieDto) : Promise<string> {
     return request({
         url: '/movie/add',
         method: 'post',

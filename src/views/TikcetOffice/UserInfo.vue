@@ -106,7 +106,7 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="120">
+          <el-table-column label="操作" width="200">
             <template #default="{row}">
               <el-button
                   type="primary"
@@ -116,6 +116,15 @@
                   :loading="payLoading[row.oid]"
               >
                 {{ row.ostatus === 0 ? '立即支付' : '已支付' }}
+              </el-button>
+              <el-button
+                  type="danger"
+                  size="small"
+                  :disabled="row.tstatus !== 0"
+                  @click="handleRefund(row)"
+                  :loading="refundLoading[row.oid]"
+              >
+                退款
               </el-button>
             </template>
           </el-table-column>
@@ -311,7 +320,7 @@ import {
 import {
   basic, updatePwd, updatePhone, recharge
 } from '../../api/user'
-import { listOrder } from '../../api/order'
+import {listOrder, refundOrder} from '../../api/order'
 import {autoUseTicket, listTicket} from '../../api/ticket'
 import type {
   UserDto, OrderDto, TicketDto, TicketPageQueryVO, OrderPayVO
@@ -603,6 +612,22 @@ const handleRecharge = async () => {
     ElMessage.error(msg)
   } finally {
     rechargeDialog.loading = false
+  }
+}
+
+// 退款相关内容
+const refundLoading = ref<Record<string, boolean>>({})
+
+const handleRefund = async (row: OrderDto) => {
+  try {
+    refundLoading.value[row.oid] = true
+    await refundOrder(row.oid)
+    ElMessage.success('退款成功')
+    location.reload()
+  } catch (error) {
+    ElMessage.error(error || '退款失败')
+  } finally {
+    refundLoading.value[row.oid] = false
   }
 }
 
